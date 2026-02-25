@@ -3,6 +3,16 @@ import React from 'react';
 export default function ResumeView({ data, isPreview = false }) {
     const { personalInfo, education, experience, projects, skills } = data;
 
+    const hasContent = (section) => {
+        if (section === 'personalInfo') return personalInfo.name || personalInfo.email || personalInfo.phone;
+        if (section === 'summary') return personalInfo.summary && personalInfo.summary.trim().length > 0;
+        if (section === 'education') return education.length > 0;
+        if (section === 'experience') return experience.length > 0;
+        if (section === 'projects') return projects.length > 0;
+        if (section === 'skills') return skills && skills.trim().length > 0;
+        return false;
+    };
+
     return (
         <div className={`bg-white text-slate-900 font-serif leading-relaxed ${isPreview ? 'p-8 scale-[0.85] origin-top' : 'p-16 max-w-4xl mx-auto min-h-screen shadow-xl'}`}>
             {/* Header */}
@@ -20,9 +30,9 @@ export default function ResumeView({ data, isPreview = false }) {
             </header>
 
             {/* Summary */}
-            {personalInfo.summary && (
+            {hasContent('summary') && (
                 <section className="mb-10">
-                    <SectionTitle title="Professional Summary" />
+                    <SectionTitle title="Summary" />
                     <p className="text-sm font-medium leading-relaxed italic text-slate-700">
                         "{personalInfo.summary}"
                     </p>
@@ -30,9 +40,9 @@ export default function ResumeView({ data, isPreview = false }) {
             )}
 
             {/* Experience */}
-            {experience.length > 0 && (
+            {hasContent('experience') && (
                 <section className="mb-10">
-                    <SectionTitle title="Professional Experience" />
+                    <SectionTitle title="Experience" />
                     <div className="space-y-8">
                         {experience.map((exp) => (
                             <div key={exp.id} className="space-y-2">
@@ -49,9 +59,9 @@ export default function ResumeView({ data, isPreview = false }) {
             )}
 
             {/* Projects */}
-            {projects.length > 0 && (
+            {hasContent('projects') && (
                 <section className="mb-10">
-                    <SectionTitle title="Key Projects" />
+                    <SectionTitle title="Projects" />
                     <div className="grid grid-cols-1 gap-6">
                         {projects.map((proj) => (
                             <div key={proj.id} className="space-y-1">
@@ -68,7 +78,7 @@ export default function ResumeView({ data, isPreview = false }) {
 
             <div className="grid grid-cols-2 gap-12">
                 {/* Education */}
-                {education.length > 0 && (
+                {hasContent('education') && (
                     <section>
                         <SectionTitle title="Education" />
                         <div className="space-y-6">
@@ -84,9 +94,9 @@ export default function ResumeView({ data, isPreview = false }) {
                 )}
 
                 {/* Skills */}
-                {skills && (
+                {hasContent('skills') && (
                     <section>
-                        <SectionTitle title="Core Competencies" />
+                        <SectionTitle title="Skills" />
                         <div className="flex flex-wrap gap-x-3 gap-y-2">
                             {skills.split(',').map((skill, i) => (
                                 <span key={i} className="text-[10px] font-black uppercase tracking-widest bg-slate-100 px-2 py-1 rounded">

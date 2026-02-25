@@ -2,7 +2,8 @@ import React from 'react';
 import { useResume } from '../../context/ResumeContext';
 import ResumeForm from '../../components/builder/ResumeForm';
 import ResumeView from '../../components/builder/ResumeView';
-import { Database, Plus, Trash2 } from 'lucide-react';
+import ScoreMeter from '../../components/builder/ScoreMeter';
+import { Database } from 'lucide-react';
 
 export default function BuilderPage() {
     const { resumeData, loadSampleData } = useResume();
@@ -25,7 +26,8 @@ export default function BuilderPage() {
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-8 space-y-12 scrollbar-hide">
+                <div className="flex-1 overflow-y-auto p-8 space-y-10 scrollbar-hide">
+                    <ScoreMeter />
                     <ResumeForm />
                 </div>
             </div>

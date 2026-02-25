@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 
 const ResumeContext = createContext();
 
@@ -65,8 +65,18 @@ const SAMPLE_DATA = {
     skills: 'React, TypeScript, Node.js, Tailwind CSS, AWS, Docker, PostgreSQL, GraphQL'
 };
 
+const STORAGE_KEY = 'resumeBuilderData';
+
 export const ResumeProvider = ({ children }) => {
-    const [resumeData, setResumeData] = useState(INITIAL_DATA);
+    const [resumeData, setResumeData] = useState(() => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        return saved ? JSON.parse(saved) : INITIAL_DATA;
+    });
+
+    // Autosave to localStorage
+    useEffect(() => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(resumeData));
+    }, [resumeData]);
 
     const updatePersonalInfo = (info) => {
         setResumeData(prev => ({
@@ -104,6 +114,67 @@ export const ResumeProvider = ({ children }) => {
         setResumeData(SAMPLE_DATA);
     };
 
+    // ATS Scoring Logic v1
+    const atsAnalysis = useMemo(() => {
+        let score = 0;
+        const suggestions = [];
+
+        // 1) Summary Length (40-120 words)
+        const summaryWords = resumeData.personalInfo.summary.trim().split(/\s+/).filter(w => w.length > 0);
+        if (summaryWords.length >= 40 && summaryWords.length <= 120) {
+            score += 15;
+        } else {
+            suggestions.push('Write a stronger summary (40–120 words).');
+        }
+
+        // 2) At least 2 projects
+        if (resumeData.projects.length >= 2) {
+            score += 10;
+        } else {
+            suggestions.push('Add at least 2 projects.');
+        }
+
+        // 3) At least 1 experience entry
+        if (resumeData.experience.length >= 1) {
+            score += 10;
+        }
+
+        // 4) Skills list >= 8 items
+        const skillList = resumeData.skills.split(',').filter(s => s.trim().length > 0);
+        if (skillList.length >= 8) {
+            score += 10;
+        } else {
+            suggestions.push('Add more skills (target 8+).');
+        }
+
+        // 5) GitHub or LinkedIn link
+        if (resumeData.personalInfo.github || resumeData.personalInfo.linkedin) {
+            score += 10;
+        }
+
+        // 6) Measurable Impact (Numbers/Quantifiers)
+        const hasNumbers = [...resumeData.experience, ...resumeData.projects].some(item => {
+            const text = (item.description || item.name || '').toLowerCase();
+            return /[\d]+[%|k|x|+]|[\d]+/.test(text); // Basic check for digits or quantifiers
+        });
+        if (hasNumbers) {
+            score += 15;
+        } else {
+            suggestions.push('Add measurable impact (numbers) in bullets.');
+        }
+
+        // 7) Education complete
+        const eduComplete = resumeData.education.length > 0 && resumeData.education.every(edu => edu.school && edu.degree && edu.date);
+        if (eduComplete) {
+            score += 10;
+        }
+
+        return {
+            score: Math.min(score, 100),
+            suggestions: suggestions.slice(0, 3) // Cap at 3 max
+        };
+    }, [resumeData]);
+
     return (
         <ResumeContext.Provider value={{
             resumeData,
@@ -112,7 +183,8 @@ export const ResumeProvider = ({ children }) => {
             updateEntry,
             removeEntry,
             updateSkills,
-            loadSampleData
+            loadSampleData,
+            atsAnalysis
         }}>
             {children}
         </ResumeContext.Provider>
