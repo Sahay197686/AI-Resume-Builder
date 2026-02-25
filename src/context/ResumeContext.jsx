@@ -17,7 +17,11 @@ const INITIAL_DATA = {
     education: [],
     experience: [],
     projects: [],
-    skills: ''
+    skills: {
+        technical: [],
+        soft: [],
+        tools: []
+    }
 };
 
 const SAMPLE_DATA = {
@@ -59,10 +63,16 @@ const SAMPLE_DATA = {
             id: '1',
             name: 'AI Portfolio Builder',
             description: 'An automated tool that uses LLMs to generate professional portfolios from GitHub repositories.',
-            link: 'github.com/johndoe/portfolio'
+            liveUrl: 'portfolio-builder.ai',
+            githubUrl: 'github.com/johndoe/portfolio',
+            techStack: ['React', 'Node.js', 'OpenAI']
         }
     ],
-    skills: 'React, TypeScript, Node.js, Tailwind CSS, AWS, Docker, PostgreSQL, GraphQL'
+    skills: {
+        technical: ['React', 'TypeScript', 'Node.js', 'PostgreSQL'],
+        soft: ['Team Leadership', 'Problem Solving'],
+        tools: ['Git', 'Docker', 'AWS']
+    }
 };
 
 const STORAGE_KEY = 'resumeBuilderData';
@@ -71,7 +81,15 @@ const TEMPLATE_KEY = 'resumeTemplate';
 export const ResumeProvider = ({ children }) => {
     const [resumeData, setResumeData] = useState(() => {
         const saved = localStorage.getItem(STORAGE_KEY);
-        return saved ? JSON.parse(saved) : INITIAL_DATA;
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            // Data Migration: Ensure skills is an object
+            if (typeof parsed.skills === 'string') {
+                parsed.skills = { technical: parsed.skills.split(',').map(s => s.trim()).filter(Boolean), soft: [], tools: [] };
+            }
+            return parsed;
+        }
+        return INITIAL_DATA;
     });
 
     const [selectedTemplate, setSelectedTemplate] = useState(() => {
@@ -96,10 +114,12 @@ export const ResumeProvider = ({ children }) => {
     };
 
     const addEntry = (section, entry) => {
+        const newId = crypto.randomUUID();
         setResumeData(prev => ({
             ...prev,
-            [section]: [...prev[section], { ...entry, id: crypto.randomUUID() }]
+            [section]: [...prev[section], { ...entry, id: newId }]
         }));
+        return newId;
     };
 
     const updateEntry = (section, id, updatedEntry) => {
@@ -116,8 +136,14 @@ export const ResumeProvider = ({ children }) => {
         }));
     };
 
-    const updateSkills = (skills) => {
-        setResumeData(prev => ({ ...prev, skills }));
+    const updateSkills = (category, skills) => {
+        setResumeData(prev => ({
+            ...prev,
+            skills: {
+                ...prev.skills,
+                [category]: skills
+            }
+        }));
     };
 
     const loadSampleData = () => {
@@ -159,13 +185,13 @@ export const ResumeProvider = ({ children }) => {
             improvements.push('Add an internship or project work experience.');
         }
 
-        // 4) Skills list >= 8 items
-        const skillList = resumeData.skills.split(',').filter(s => s.trim().length > 0);
-        if (skillList.length >= 8) {
+        // 4) Skills list >= 8 items across all categories
+        const allSkills = [...resumeData.skills.technical, ...resumeData.skills.soft, ...resumeData.skills.tools];
+        if (allSkills.length >= 8) {
             score += 10;
         } else {
-            suggestions.push('Add more skills (target 8+).');
-            improvements.push('Add 8+ relevant technical skills.');
+            suggestions.push('Add more skills (target 8+ total).');
+            improvements.push('Add 8+ relevant skills across categories.');
         }
 
         // 5) GitHub or LinkedIn link
@@ -194,7 +220,7 @@ export const ResumeProvider = ({ children }) => {
         return {
             score: Math.min(score, 100),
             suggestions: suggestions.slice(0, 3),
-            improvements: improvements.slice(0, 3), // Top 3 Improvements
+            improvements: improvements.slice(0, 3),
             isComplete // Return completeness status
         };
     }, [resumeData]);

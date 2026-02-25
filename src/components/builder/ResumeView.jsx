@@ -1,5 +1,6 @@
 import React from 'react';
 import { useResume } from '../../context/ResumeContext';
+import { Github, Link as LinkIcon, ExternalLink } from 'lucide-react';
 
 export default function ResumeView({ data, isPreview = false }) {
     const { selectedTemplate } = useResume();
@@ -11,7 +12,9 @@ export default function ResumeView({ data, isPreview = false }) {
         if (section === 'education') return education.length > 0;
         if (section === 'experience') return experience.length > 0;
         if (section === 'projects') return projects.length > 0;
-        if (section === 'skills') return skills && skills.trim().length > 0;
+        if (section === 'skills') {
+            return (skills.technical?.length > 0) || (skills.soft?.length > 0) || (skills.tools?.length > 0);
+        }
         return false;
     };
 
@@ -22,7 +25,55 @@ export default function ResumeView({ data, isPreview = false }) {
         return <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300 border-b border-slate-100 pb-2 mb-4">{title}</h3>;
     };
 
-    // 1. CLASSIC TEMPLATE (Centered Header, Serif)
+    const SkillPills = ({ category, items }) => {
+        if (!items || items.length === 0) return null;
+        return (
+            <div className="space-y-2">
+                <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">{category}</span>
+                <div className="flex flex-wrap gap-1.5">
+                    {items.map((item, i) => (
+                        <span key={i} className="text-[9px] font-bold px-2 py-0.5 bg-slate-50 border border-slate-100 rounded text-slate-700">
+                            {item}
+                        </span>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
+    const ProjectCard = ({ proj, isClassic = false }) => (
+        <div key={proj.id} className={`${isClassic ? 'space-y-1' : 'p-4 bg-slate-50/50 border border-slate-100 rounded-xl space-y-3'} break-inside-avoid relative group`}>
+            <div className="flex justify-between items-start">
+                <div>
+                    <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-900">{proj.name}</h4>
+                    <div className="flex gap-3 mt-1">
+                        {proj.githubUrl && (
+                            <a href={proj.githubUrl} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-slate-900 transition-colors">
+                                <Github size={12} />
+                            </a>
+                        )}
+                        {proj.liveUrl && (
+                            <a href={proj.liveUrl} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-slate-900 transition-colors">
+                                <ExternalLink size={12} />
+                            </a>
+                        )}
+                    </div>
+                </div>
+            </div>
+            <p className="text-[11px] font-medium text-slate-600 leading-relaxed">{proj.description}</p>
+            {proj.techStack?.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                    {proj.techStack.map((tech, i) => (
+                        <span key={i} className="text-[8px] font-bold px-1.5 py-0.5 bg-white border border-slate-100 rounded text-slate-400 uppercase tracking-tighter">
+                            {tech}
+                        </span>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+
+    // 1. CLASSIC TEMPLATE
     if (selectedTemplate === 'classic') {
         return (
             <div id="resume-root" className={`bg-white text-slate-900 font-serif leading-relaxed h-full print:p-0 print:shadow-none ${isPreview ? 'p-8 scale-[0.85] origin-top' : 'p-16 max-w-4xl mx-auto min-h-screen shadow-xl'}`}>
@@ -71,12 +122,7 @@ export default function ResumeView({ data, isPreview = false }) {
                                 <SectionTitle title="Projects" />
                                 <div className="space-y-6">
                                     {projects.map((proj) => (
-                                        <div key={proj.id} className="space-y-1 break-inside-avoid">
-                                            <div className="flex justify-between items-baseline">
-                                                <h4 className="text-sm font-black uppercase tracking-wider">{proj.name}</h4>
-                                            </div>
-                                            <p className="text-xs font-medium text-slate-700 leading-relaxed">{proj.description}</p>
-                                        </div>
+                                        <ProjectCard key={proj.id} proj={proj} isClassic />
                                     ))}
                                 </div>
                             </section>
@@ -99,10 +145,10 @@ export default function ResumeView({ data, isPreview = false }) {
                         {hasContent('skills') && (
                             <section className="break-inside-avoid">
                                 <SectionTitle title="Skills" />
-                                <div className="flex flex-wrap gap-x-3 gap-y-2">
-                                    {skills.split(',').map((skill, i) => (
-                                        <span key={i} className="text-[10px] font-black uppercase tracking-widest bg-slate-100 print:bg-white print:border print:border-slate-100 px-2 py-1 rounded">{skill.trim()}</span>
-                                    ))}
+                                <div className="space-y-4">
+                                    <SkillPills category="Technical" items={skills.technical} />
+                                    <SkillPills category="Soft Skills" items={skills.soft} />
+                                    <SkillPills category="Tools" items={skills.tools} />
                                 </div>
                             </section>
                         )}
@@ -112,7 +158,7 @@ export default function ResumeView({ data, isPreview = false }) {
         );
     }
 
-    // 2. MODERN TEMPLATE (Sidebar Header, Sans Layout)
+    // 2. MODERN TEMPLATE
     if (selectedTemplate === 'modern') {
         return (
             <div id="resume-root" className={`bg-white text-slate-900 font-sans leading-relaxed h-full flex print:p-0 print:shadow-none ${isPreview ? 'p-8 scale-[0.85] origin-top' : 'p-16 max-w-4xl mx-auto min-h-screen shadow-xl'}`}>
@@ -129,13 +175,10 @@ export default function ResumeView({ data, isPreview = false }) {
                     {hasContent('skills') && (
                         <section className="break-inside-avoid">
                             <SectionTitle title="Skills" />
-                            <div className="flex flex-col gap-2">
-                                {skills.split(',').map((skill, i) => (
-                                    <div key={i} className="text-[10px] font-black uppercase tracking-widest text-slate-600 flex items-center gap-2">
-                                        <div className="w-1.5 h-1.5 bg-slate-900 rounded-full"></div>
-                                        {skill.trim()}
-                                    </div>
-                                ))}
+                            <div className="space-y-4">
+                                <SkillPills category="Technical" items={skills.technical} />
+                                <SkillPills category="Soft Skills" items={skills.soft} />
+                                <SkillPills category="Tools" items={skills.tools} />
                             </div>
                         </section>
                     )}
@@ -184,12 +227,9 @@ export default function ResumeView({ data, isPreview = false }) {
                     {hasContent('projects') && (
                         <section>
                             <SectionTitle title="Projects" />
-                            <div className="space-y-6">
+                            <div className="grid grid-cols-1 gap-4">
                                 {projects.map((proj) => (
-                                    <div key={proj.id} className="space-y-1 break-inside-avoid">
-                                        <h4 className="text-xs font-black uppercase tracking-wider">{proj.name}</h4>
-                                        <p className="text-xs font-medium text-slate-600 leading-normal">{proj.description}</p>
-                                    </div>
+                                    <ProjectCard key={proj.id} proj={proj} />
                                 ))}
                             </div>
                         </section>
@@ -199,7 +239,7 @@ export default function ResumeView({ data, isPreview = false }) {
         );
     }
 
-    // 3. MINIMAL TEMPLATE (No Borders, Bold Typography, Left Aligned)
+    // 3. MINIMAL TEMPLATE
     if (selectedTemplate === 'minimal') {
         return (
             <div id="resume-root" className={`bg-white text-slate-900 font-sans leading-relaxed h-full print:p-0 print:shadow-none ${isPreview ? 'p-8 scale-[0.85] origin-top' : 'p-16 max-w-4xl mx-auto min-h-screen shadow-xl'}`}>
@@ -239,14 +279,11 @@ export default function ResumeView({ data, isPreview = false }) {
                     {hasContent('projects') && (
                         <section>
                             <SectionTitle title="Projects" />
-                            <div className="space-y-8">
+                            <div className="space-y-6">
                                 {projects.map((proj) => (
                                     <div key={proj.id} className="grid grid-cols-[120px_1fr] gap-8 break-inside-avoid">
-                                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest mt-1">{proj.link ? 'LINK' : 'DOC'}</span>
-                                        <div className="space-y-1">
-                                            <h4 className="text-sm font-black uppercase tracking-tight">{proj.name}</h4>
-                                            <p className="text-xs font-medium text-slate-600 leading-relaxed">{proj.description}</p>
-                                        </div>
+                                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest mt-1">{proj.liveUrl || proj.githubUrl ? 'PROJECT' : 'DOC'}</span>
+                                        <ProjectCard proj={proj} />
                                     </div>
                                 ))}
                             </div>
@@ -270,10 +307,10 @@ export default function ResumeView({ data, isPreview = false }) {
                         {hasContent('skills') && (
                             <section className="break-inside-avoid">
                                 <SectionTitle title="Skills" />
-                                <div className="flex flex-wrap gap-2">
-                                    {skills.split(',').map((skill, i) => (
-                                        <span key={i} className="text-[9px] font-black uppercase tracking-widest bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-full print:bg-white">{skill.trim()}</span>
-                                    ))}
+                                <div className="space-y-4">
+                                    <SkillPills category="Technical" items={skills.technical} />
+                                    <SkillPills category="Soft Skills" items={skills.soft} />
+                                    <SkillPills category="Tools" items={skills.tools} />
                                 </div>
                             </section>
                         )}
