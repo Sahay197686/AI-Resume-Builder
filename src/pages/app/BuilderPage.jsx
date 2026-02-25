@@ -3,6 +3,7 @@ import { useResume } from '../../context/ResumeContext';
 import ResumeForm from '../../components/builder/ResumeForm';
 import ResumeView from '../../components/builder/ResumeView';
 import ScoreMeter from '../../components/builder/ScoreMeter';
+import TemplateSwitcher from '../../components/builder/TemplateSwitcher';
 import { Database } from 'lucide-react';
 
 export default function BuilderPage() {
@@ -39,10 +40,7 @@ export default function BuilderPage() {
                         <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">Live Preview</h2>
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Real-time Visual Feedback</p>
                     </div>
-                    <div className="flex gap-2">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                        <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Sync Active</span>
-                    </div>
+                    <TemplateSwitcher />
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-12 flex justify-center scrollbar-hide">

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useResume } from '../../context/ResumeContext';
-import { Plus, Trash2, User, BookOpen, Briefcase, FolderGit2, Lightbulb, Link as LinkIcon } from 'lucide-react';
+import { Plus, Trash2, User, BookOpen, Briefcase, FolderGit2, Lightbulb, AlertCircle, Sparkles } from 'lucide-react';
 
 export default function ResumeForm() {
     const { resumeData, updatePersonalInfo, addEntry, removeEntry, updateEntry, updateSkills } = useResume();
@@ -51,7 +51,8 @@ export default function ResumeForm() {
                         <div key={edu.id} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl relative group">
                             <button
                                 onClick={() => removeEntry('education', edu.id)}
-                                className="absolute top-4 right-4 text-slate-300 hover:text-rose-500 transition-colors"
+                                className="absolute top-4 right-4 text-slate-300 hover:rose-500 transition-colors"
+                                title="Remove Education"
                             >
                                 <Trash2 size={16} />
                             </button>
@@ -82,7 +83,8 @@ export default function ResumeForm() {
                         <div key={exp.id} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl relative group">
                             <button
                                 onClick={() => removeEntry('experience', exp.id)}
-                                className="absolute top-4 right-4 text-slate-300 hover:text-rose-500 transition-colors"
+                                className="absolute top-4 right-4 text-slate-300 hover:rose-500 transition-colors"
+                                title="Remove Experience"
                             >
                                 <Trash2 size={16} />
                             </button>
@@ -98,6 +100,7 @@ export default function ResumeForm() {
                                         className="w-full bg-white border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/5 transition-all h-24 resize-none font-medium"
                                         placeholder="Key achievements and responsibilities..."
                                     />
+                                    <BulletGuidance text={exp.description} />
                                 </div>
                             </div>
                         </div>
@@ -120,7 +123,8 @@ export default function ResumeForm() {
                         <div key={proj.id} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl relative group">
                             <button
                                 onClick={() => removeEntry('projects', proj.id)}
-                                className="absolute top-4 right-4 text-slate-300 hover:text-rose-500 transition-colors"
+                                className="absolute top-4 right-4 text-slate-300 hover:rose-500 transition-colors"
+                                title="Remove Project"
                             >
                                 <Trash2 size={16} />
                             </button>
@@ -135,6 +139,7 @@ export default function ResumeForm() {
                                         className="w-full bg-white border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/5 transition-all h-24 resize-none font-medium"
                                         placeholder="Short project overview..."
                                     />
+                                    <BulletGuidance text={proj.description} />
                                 </div>
                             </div>
                         </div>
@@ -176,6 +181,40 @@ function Input({ label, ...props }) {
                 className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/5 transition-all font-medium"
                 {...props}
             />
+        </div>
+    );
+}
+
+function BulletGuidance({ text }) {
+    if (!text || text.trim().length === 0) return null;
+
+    const actionVerbs = ['built', 'developed', 'designed', 'implemented', 'led', 'improved', 'created', 'optimized', 'automated', 'managed', 'scaling', 'increased', 'reduced'];
+    const firstWord = text.trim().split(/\s+/)[0]?.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "");
+
+    const hasActionVerb = actionVerbs.includes(firstWord);
+    const hasNumbers = /[\d]+[%|k|x|+]|[\d]+/.test(text);
+
+    const errors = [];
+    if (!hasActionVerb) errors.push({ id: 'verb', msg: 'Start with a strong action verb (e.g., Designed, Built).' });
+    if (!hasNumbers) errors.push({ id: 'impact', msg: 'Add measurable impact (e.g., increased efficiency by 20%).' });
+
+    if (errors.length === 0) {
+        return (
+            <div className="mt-2 flex items-center gap-2 text-emerald-600 animate-in fade-in slide-in-from-top-1 duration-300">
+                <Sparkles size={10} />
+                <span className="text-[10px] font-black uppercase tracking-widest">Optimized bullet structure</span>
+            </div>
+        );
+    }
+
+    return (
+        <div className="mt-2 space-y-1">
+            {errors.map(error => (
+                <div key={error.id} className="flex items-center gap-2 text-slate-400 animate-in fade-in slide-in-from-top-1 duration-300">
+                    <AlertCircle size={10} className="text-amber-500" />
+                    <span className="text-[10px] font-bold tracking-tight">{error.msg}</span>
+                </div>
+            ))}
         </div>
     );
 }

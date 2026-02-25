@@ -66,6 +66,7 @@ const SAMPLE_DATA = {
 };
 
 const STORAGE_KEY = 'resumeBuilderData';
+const TEMPLATE_KEY = 'resumeTemplate';
 
 export const ResumeProvider = ({ children }) => {
     const [resumeData, setResumeData] = useState(() => {
@@ -73,10 +74,19 @@ export const ResumeProvider = ({ children }) => {
         return saved ? JSON.parse(saved) : INITIAL_DATA;
     });
 
+    const [selectedTemplate, setSelectedTemplate] = useState(() => {
+        return localStorage.getItem(TEMPLATE_KEY) || 'classic';
+    });
+
     // Autosave to localStorage
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(resumeData));
     }, [resumeData]);
+
+    // Persist template choice
+    useEffect(() => {
+        localStorage.setItem(TEMPLATE_KEY, selectedTemplate);
+    }, [selectedTemplate]);
 
     const updatePersonalInfo = (info) => {
         setResumeData(prev => ({
@@ -114,10 +124,11 @@ export const ResumeProvider = ({ children }) => {
         setResumeData(SAMPLE_DATA);
     };
 
-    // ATS Scoring Logic v1
+    // ATS Scoring Logic v1 + Improvement Logic
     const atsAnalysis = useMemo(() => {
         let score = 0;
         const suggestions = [];
+        const improvements = [];
 
         // 1) Summary Length (40-120 words)
         const summaryWords = resumeData.personalInfo.summary.trim().split(/\s+/).filter(w => w.length > 0);
@@ -125,6 +136,7 @@ export const ResumeProvider = ({ children }) => {
             score += 15;
         } else {
             suggestions.push('Write a stronger summary (40–120 words).');
+            if (summaryWords.length < 40) improvements.push('Expand summary to at least 40 words.');
         }
 
         // 2) At least 2 projects
@@ -132,11 +144,14 @@ export const ResumeProvider = ({ children }) => {
             score += 10;
         } else {
             suggestions.push('Add at least 2 projects.');
+            improvements.push('Add at least 2 technical projects.');
         }
 
         // 3) At least 1 experience entry
         if (resumeData.experience.length >= 1) {
             score += 10;
+        } else {
+            improvements.push('Add an internship or project work experience.');
         }
 
         // 4) Skills list >= 8 items
@@ -145,6 +160,7 @@ export const ResumeProvider = ({ children }) => {
             score += 10;
         } else {
             suggestions.push('Add more skills (target 8+).');
+            improvements.push('Add 8+ relevant technical skills.');
         }
 
         // 5) GitHub or LinkedIn link
@@ -155,12 +171,13 @@ export const ResumeProvider = ({ children }) => {
         // 6) Measurable Impact (Numbers/Quantifiers)
         const hasNumbers = [...resumeData.experience, ...resumeData.projects].some(item => {
             const text = (item.description || item.name || '').toLowerCase();
-            return /[\d]+[%|k|x|+]|[\d]+/.test(text); // Basic check for digits or quantifiers
+            return /[\d]+[%|k|x|+]|[\d]+/.test(text);
         });
         if (hasNumbers) {
             score += 15;
         } else {
             suggestions.push('Add measurable impact (numbers) in bullets.');
+            improvements.push('Add numbers/impact (%, $, quantity) to results.');
         }
 
         // 7) Education complete
@@ -171,7 +188,8 @@ export const ResumeProvider = ({ children }) => {
 
         return {
             score: Math.min(score, 100),
-            suggestions: suggestions.slice(0, 3) // Cap at 3 max
+            suggestions: suggestions.slice(0, 3),
+            improvements: improvements.slice(0, 3) // Top 3 Improvements
         };
     }, [resumeData]);
 
@@ -184,7 +202,9 @@ export const ResumeProvider = ({ children }) => {
             removeEntry,
             updateSkills,
             loadSampleData,
-            atsAnalysis
+            atsAnalysis,
+            selectedTemplate,
+            setSelectedTemplate
         }}>
             {children}
         </ResumeContext.Provider>
