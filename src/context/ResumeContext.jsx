@@ -130,6 +130,11 @@ export const ResumeProvider = ({ children }) => {
         const suggestions = [];
         const improvements = [];
 
+        // Validation Hardening: Basic Completeness
+        const hasName = resumeData.personalInfo.name.trim().length > 0;
+        const hasEntries = resumeData.experience.length > 0 || resumeData.projects.length > 0;
+        const isComplete = hasName && hasEntries;
+
         // 1) Summary Length (40-120 words)
         const summaryWords = resumeData.personalInfo.summary.trim().split(/\s+/).filter(w => w.length > 0);
         if (summaryWords.length >= 40 && summaryWords.length <= 120) {
@@ -189,7 +194,8 @@ export const ResumeProvider = ({ children }) => {
         return {
             score: Math.min(score, 100),
             suggestions: suggestions.slice(0, 3),
-            improvements: improvements.slice(0, 3) // Top 3 Improvements
+            improvements: improvements.slice(0, 3), // Top 3 Improvements
+            isComplete // Return completeness status
         };
     }, [resumeData]);
 

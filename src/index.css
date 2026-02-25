@@ -3,24 +3,76 @@
 @tailwind utilities;
 
 :root {
-  --primary: #3b82f6;
-  --primary-hover: #2563eb;
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+    @apply bg-slate-50 text-slate-900 antialiased;
 }
 
 /* Custom styles for the premium feel */
 .glass-panel {
-  @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-xl;
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-xl;
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;
+    display: none;
 }
 
 .scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+@media print {
+
+    /* Hide all UI elements */
+    nav,
+    .sticky,
+    button,
+    .fixed,
+    aside,
+    [role="navigation"] {
+        display: none !important;
+    }
+
+    /* Reset layout for print */
+    body,
+    html {
+        background: white !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* Target the resume container specifically */
+    #resume-root {
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+        transform: none !important;
+    }
+
+    /* Ensure text is black for clarity */
+    * {
+        color: black !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Force background colors if any (dots/accents) */
+    .bg-slate-100,
+    .bg-slate-50 {
+        background-color: transparent !important;
+        border: 1px solid #eee;
+    }
+
+    @page {
+        margin: 0.5in;
+        size: auto;
+    }
 }
