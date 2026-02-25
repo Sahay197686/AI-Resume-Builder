@@ -77,6 +77,7 @@ const SAMPLE_DATA = {
 
 const STORAGE_KEY = 'resumeBuilderData';
 const TEMPLATE_KEY = 'resumeTemplate';
+const COLOR_KEY = 'resumeAccentColor';
 
 export const ResumeProvider = ({ children }) => {
     const [resumeData, setResumeData] = useState(() => {
@@ -96,6 +97,10 @@ export const ResumeProvider = ({ children }) => {
         return localStorage.getItem(TEMPLATE_KEY) || 'classic';
     });
 
+    const [accentColor, setAccentColor] = useState(() => {
+        return localStorage.getItem(COLOR_KEY) || 'hsl(168, 60%, 40%)';
+    });
+
     // Autosave to localStorage
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(resumeData));
@@ -105,6 +110,11 @@ export const ResumeProvider = ({ children }) => {
     useEffect(() => {
         localStorage.setItem(TEMPLATE_KEY, selectedTemplate);
     }, [selectedTemplate]);
+
+    // Persist color choice
+    useEffect(() => {
+        localStorage.setItem(COLOR_KEY, accentColor);
+    }, [accentColor]);
 
     const updatePersonalInfo = (info) => {
         setResumeData(prev => ({
@@ -150,78 +160,58 @@ export const ResumeProvider = ({ children }) => {
         setResumeData(SAMPLE_DATA);
     };
 
-    // ATS Scoring Logic v1 + Improvement Logic
+    // ATS Scoring Logic v1.1
     const atsAnalysis = useMemo(() => {
         let score = 0;
-        const suggestions = [];
         const improvements = [];
 
-        // Validation Hardening: Basic Completeness
-        const hasName = resumeData.personalInfo.name.trim().length > 0;
-        const hasEntries = resumeData.experience.length > 0 || resumeData.projects.length > 0;
-        const isComplete = hasName && hasEntries;
+        const { personalInfo, experience, projects, skills } = resumeData;
 
-        // 1) Summary Length (40-120 words)
-        const summaryWords = resumeData.personalInfo.summary.trim().split(/\s+/).filter(w => w.length > 0);
-        if (summaryWords.length >= 40 && summaryWords.length <= 120) {
-            score += 15;
-        } else {
-            suggestions.push('Write a stronger summary (40–120 words).');
-            if (summaryWords.length < 40) improvements.push('Expand summary to at least 40 words.');
-        }
+        // 1) Personal Info rules
+        if (personalInfo.name?.trim()) score += 10;
+        else improvements.push({ text: 'Add your professional name', points: 10 });
 
-        // 2) At least 2 projects
-        if (resumeData.projects.length >= 2) {
-            score += 10;
-        } else {
-            suggestions.push('Add at least 2 projects.');
-            improvements.push('Add at least 2 technical projects.');
-        }
+        if (personalInfo.email?.trim()) score += 10;
+        else improvements.push({ text: 'Add a contact email', points: 10 });
 
-        // 3) At least 1 experience entry
-        if (resumeData.experience.length >= 1) {
-            score += 10;
-        } else {
-            improvements.push('Add an internship or project work experience.');
-        }
+        if (personalInfo.phone?.trim()) score += 5;
+        else improvements.push({ text: 'Add a phone number', points: 5 });
 
-        // 4) Skills list >= 8 items across all categories
-        const allSkills = [...resumeData.skills.technical, ...resumeData.skills.soft, ...resumeData.skills.tools];
-        if (allSkills.length >= 8) {
-            score += 10;
-        } else {
-            suggestions.push('Add more skills (target 8+ total).');
-            improvements.push('Add 8+ relevant skills across categories.');
-        }
+        if (personalInfo.linkedin?.trim()) score += 5;
+        else improvements.push({ text: 'Add LinkedIn profile link', points: 5 });
 
-        // 5) GitHub or LinkedIn link
-        if (resumeData.personalInfo.github || resumeData.personalInfo.linkedin) {
-            score += 10;
-        }
+        if (personalInfo.github?.trim()) score += 5;
+        else improvements.push({ text: 'Add GitHub profile link', points: 5 });
 
-        // 6) Measurable Impact (Numbers/Quantifiers)
-        const hasNumbers = [...resumeData.experience, ...resumeData.projects].some(item => {
-            const text = (item.description || item.name || '').toLowerCase();
-            return /[\d]+[%|k|x|+]|[\d]+/.test(text);
-        });
-        if (hasNumbers) {
-            score += 15;
-        } else {
-            suggestions.push('Add measurable impact (numbers) in bullets.');
-            improvements.push('Add numbers/impact (%, $, quantity) to results.');
-        }
+        // 2) Summary rules
+        const hasLongSummary = personalInfo.summary?.trim().length > 50;
+        if (hasLongSummary) score += 10;
+        else improvements.push({ text: 'Add a professional summary (> 50 chars)', points: 10 });
 
-        // 7) Education complete
-        const eduComplete = resumeData.education.length > 0 && resumeData.education.every(edu => edu.school && edu.degree && edu.date);
-        if (eduComplete) {
-            score += 10;
-        }
+        const ACTION_VERBS = ['built', 'led', 'designed', 'improved', 'developed', 'managed', 'created', 'implemented', 'optimized', 'spearheaded'];
+        const hasActionVerbs = ACTION_VERBS.some(verb => personalInfo.summary?.toLowerCase().includes(verb));
+        if (hasActionVerbs) score += 10;
+        else improvements.push({ text: 'Use action verbs in summary (built, led, etc.)', points: 10 });
+
+        // 3) Content rules
+        const hasExperienceWithBullets = experience.length > 0 && experience.some(exp => exp.description?.includes('\n') || exp.description?.includes('•') || exp.description?.length > 100);
+        if (hasExperienceWithBullets) score += 15;
+        else improvements.push({ text: 'Add detailed experience with bullet points', points: 15 });
+
+        if (resumeData.education.length > 0) score += 10;
+        else improvements.push({ text: 'Add your educational background', points: 10 });
+
+        const totalSkills = Object.values(skills).flat().filter(Boolean).length;
+        if (totalSkills >= 5) score += 10;
+        else improvements.push({ text: 'Add at least 5 professional skills', points: 10 });
+
+        if (projects.length > 0) score += 10;
+        else improvements.push({ text: 'Add at least one key project', points: 10 });
 
         return {
             score: Math.min(score, 100),
-            suggestions: suggestions.slice(0, 3),
-            improvements: improvements.slice(0, 3),
-            isComplete // Return completeness status
+            improvements: improvements.sort((a, b) => b.points - a.points),
+            isComplete: personalInfo.name?.trim() && experience.length > 0
         };
     }, [resumeData]);
 
@@ -236,7 +226,9 @@ export const ResumeProvider = ({ children }) => {
             loadSampleData,
             atsAnalysis,
             selectedTemplate,
-            setSelectedTemplate
+            setSelectedTemplate,
+            accentColor,
+            setAccentColor
         }}>
             {children}
         </ResumeContext.Provider>

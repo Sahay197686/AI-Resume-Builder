@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import { useResume } from '../../context/ResumeContext';
-import ResumeView from '../../components/builder/ResumeView';
-import TemplateSwitcher from '../../components/builder/TemplateSwitcher';
-import { Download, Printer, Share2, ArrowLeft, Copy, Check, AlertTriangle, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Printer, ArrowLeft, Copy, Check, AlertTriangle } from 'lucide-react';
+import ResumeView from '../../components/builder/ResumeView';
+import CircularScore from '../../components/builder/CircularScore';
 
 export default function PreviewPage() {
     const { resumeData, atsAnalysis } = useResume();
     const { isComplete } = atsAnalysis;
     const navigate = useNavigate();
     const [copied, setCopied] = useState(false);
+    const [showToast, setShowToast] = useState(false);
 
     const handlePrint = () => {
         window.print();
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
     };
 
     const handleCopyText = async () => {
@@ -45,7 +48,10 @@ export default function PreviewPage() {
             });
         }
 
-        text += `\nSKILLS\n${skills}`;
+        const skillsSerialized = Object.entries(skills)
+            .map(([cat, list]) => `${cat.toUpperCase()}: ${list.join(', ')}`)
+            .join('\n');
+        text += `\nSKILLS\n${skillsSerialized}`;
 
         try {
             await navigator.clipboard.writeText(text);
@@ -63,11 +69,11 @@ export default function PreviewPage() {
                 <div className="flex items-center gap-6">
                     <button
                         onClick={() => navigate('/builder')}
-                        className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-900"
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-600 font-bold text-[10px] uppercase tracking-widest"
                     >
-                        <ArrowLeft size={20} />
+                        <ArrowLeft size={16} />
+                        Back to Editor
                     </button>
-                    <TemplateSwitcher />
                 </div>
 
                 <div className="flex gap-3">
@@ -92,13 +98,17 @@ export default function PreviewPage() {
             {!isComplete && (
                 <div className="bg-amber-50 border-b border-amber-100 px-8 py-3 flex items-center justify-center gap-3 animate-in fade-in slide-in-from-top duration-500 print:hidden">
                     <AlertTriangle size={14} className="text-amber-500" />
-                    <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Your resume may look incomplete. Consider adding more details.</p>
+                    <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Crucial information missing. Your resume score might be low.</p>
                 </div>
             )}
 
             {/* Main Preview Container */}
-            <div className="flex-1 p-12 flex justify-center overflow-y-auto scrollbar-hide print:p-0 print:overflow-visible">
-                <div className="w-full max-w-[900px] animate-in fade-in slide-in-from-bottom-4 duration-700 print:max-w-none print:transform-none">
+            <div className="flex-1 p-12 flex flex-col items-center overflow-y-auto scrollbar-hide print:p-0 print:overflow-visible">
+                <div className="w-full max-w-[900px] space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 print:max-w-none print:transform-none">
+                    <div className="print:hidden">
+                        <CircularScore />
+                    </div>
+
                     <div className="bg-white shadow-2xl rounded-sm print:shadow-none">
                         <ResumeView data={resumeData} isPreview={false} />
                     </div>
@@ -114,6 +124,16 @@ export default function PreviewPage() {
             <div className="fixed bottom-8 right-8 pointer-events-none opacity-5 print:hidden">
                 <div className="text-[120px] font-black leading-none select-none">RESUME</div>
             </div>
+
+            {/* Success Toast */}
+            {showToast && (
+                <div className="fixed bottom-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300 z-50 print:hidden">
+                    <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
+                        <Check size={14} strokeWidth={3} />
+                    </div>
+                    <p className="text-xs font-bold uppercase tracking-widest">PDF export ready! Check your downloads.</p>
+                </div>
+            )}
         </div>
     );
 }
